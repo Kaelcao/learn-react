@@ -12,15 +12,39 @@ class ManageCoursePage extends React.Component {
       course: Object.assign({}, props.course),
       errors: {}
     };
+
+    this.updateCourseState = this.updateCourseState.bind(this);
+    this.saveCourse = this.saveCourse.bind(this);
+
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (this.props.course.id != nextProps.course.id) {
+      this.setState({course: Object.assign({}, nextProps.course)});
+    }
+  }
+
+  updateCourseState(event) {
+    const field = event.target.name;
+    let course = this.state.course;
+    course[field] = event.target.value;
+    return this.setState({course: course});
+  }
+
+  saveCourse(event) {
+    event.preventDefault();
+    this.props.actions.saveCourse(this.state.course);
+    this.context.router.push('/courses');
   }
 
   render() {
-    console.log(this.state.errors);
     return (
       <div>
         <CourseForm
-          allAuthors={[]}
+          allAuthors={this.props.authors}
+          onChange={this.updateCourseState}
           course={this.state.course}
+          onSave={this.saveCourse}
           errors={this.state.errors}/>
       </div>
     );
@@ -28,13 +52,36 @@ class ManageCoursePage extends React.Component {
 }
 
 ManageCoursePage.propTypes = {
-  course: PropTypes.object.isRequired
+  course: PropTypes.object.isRequired,
+  authors: PropTypes.array.isRequired,
+  actions: PropTypes.object.isRequired
 };
 
+ManageCoursePage.contextTypes = {
+  router: PropTypes.object
+};
+function getCourseById(courses, courseId) {
+  const course = courses.filter(course => course.id == courseId);
+  if (course.length > 0) return course[0];
+  return null;
+}
+
 function mapStateToProps(state, ownProps) {
+  let courseId = ownProps.params.id;
   let course = {id: '', watchHref: '', title: '', authorId: '', length: '', category: ''};
+  if (courseId && state.courses.length > 0) {
+    course = getCourseById(state.courses, courseId);
+  }
+  const authosFormattedForDropdown = state.authors.map(author => {
+    return {
+      value: author.id,
+      text: author.firstName + " " + author.lastName
+    };
+  });
+
   return {
-    course: course
+    course: course,
+    authors: authosFormattedForDropdown
   };
 }
 
